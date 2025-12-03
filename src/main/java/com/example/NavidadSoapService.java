@@ -131,4 +131,124 @@ class OraclDAO {
     }
 
     // customer CRUD
+    public Customer createCustomer(Customer c) throws SQLException {
+        String sql = "INSERT INTO customer (NAME, EMAIL) VALUES (?, ?)";
+        String [] cols = {"CUSTOMER_ID"};
+        try (Connection connection = getConnection(); PreparedStatement ps = connection.prepareStatement(sql, cols)) {
+            ps.setString(1, c.getName());
+            ps.setString(2, c.getEmail());
+            ps.executeUpdate();
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    c.setCustomerId(rs.getLong(1));
+                }
+            }
+        }
+        return c;
+    }
+
+    public Customer findCustomerById(Long id) throws SQLException {
+        String sql = "SELECT CUSTOMER_ID, NAME, EMAIL FROM CUSTOMER WHERE CUSTOMER_ID = ?";
+        try (Connection connection = getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setLong(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                   return new Customer (rs.getLong("CUSTOMER_ID"), rs.getString("NAME"), rs.getString("EMAIL"));
+                }
+            }
+        }
+        return null;
+    }
+
+    public List<Customer> listCustomers() throws SQLException {
+        List<Customer> out = new ArrayList<>();
+        String sql = "SELECT CUSTOMER_ID, NAME, EMAIL FROM CUSTOMER ORDER BY CUSTOMER_ID";
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                out.add(new Customer(rs.getLong("CUSTOMER_ID"), rs.getString("NAME"), rs.getString("EMAIL")));
+            }
+        }
+        return out;
+    }
+
+    // Gift CRUD
+    public Gift createGift(Gift g) throws SQLException {
+        String sql = "INSERT INTO GIFT(NAME, PRICE, IN_STOCK) VALUES(?, ?, ?)";
+        String[] cols = {"GIFT_ID"};
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql, cols)) {
+            ps.setString(1, g.getName());
+            ps.setDouble(2, g.getPrice());
+            ps.setInt(3, g.getInStock());
+            ps.executeUpdate();
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) g.setGiftId(rs.getLong(1));
+            }
+        }
+        return g;
+    }
+
+    public Gift findGiftById(Long id) throws SQLException {
+        String sql = "SELECT GIFT_ID, NAME, PRICE, IN_STOCK FROM GIFT WHERE GIFT_ID = ?";
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return new Gift(rs.getLong("GIFT_ID"), rs.getString("NAME"), rs.getDouble("PRICE"), rs.getInt("IN_STOCK"));
+            }
+        }
+        return null;
+    }
+
+    public List<Gift> listGifts() throws SQLException {
+        List<Gift> out = new ArrayList<>();
+        String sql = "SELECT GIFT_ID, NAME, PRICE, IN_STOCK FROM GIFT ORDER BY GIFT_ID";
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) out.add(new Gift(rs.getLong("GIFT_ID"), rs.getString("NAME"), rs.getDouble("PRICE"), rs.getInt("IN_STOCK")));
+        }
+        return out;
+    }
+
+    // Orders
+    public OrderDTO createOrder(OrderDTO order) throws SQLException {
+        // Reduce stock and insert order in a transaction
+        String updateStock = "UPDATE GIFT SET IN_STOCK = IN_STOCK - ? WHERE GIFT_ID = ? AND IN_STOCK >= ?";
+        String insertOrder = "INSERT INTO ORDERS(CUSTOMER_ID, GIFT_ID, QUANTITY, TOTAL_PRICE) VALUES(?, ?, ?, ?)";
+        String[] cols = {"ORDER_ID"};
+
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement pst = conn.prepareStatement(updateStock)) {
+                pst.setInt(1, order.getQuantity());
+                pst.setLong(2, order.getGiftId());
+                pst.setInt(3, order.getQuantity());
+                int rows = pst.executeUpdate();
+                if (rows == 0) {
+                    conn.rollback();
+                    throw new SQLException("Stock insuficiente o regalo no existe");
+                }
+            }
+            try (PreparedStatement psi = conn.prepareStatement(insertOrder, cols)) {
+                psi.setLong(1, order.getCustomerId());
+                psi.setLong(2, order.getGiftId());
+                psi.setInt(3, order.getQuantity());
+                psi.setDouble(4, order.getTotalPrice());
+                psi.executeUpdate();
+                try (ResultSet rs = psi.getGeneratedKeys()) {
+                    if (rs.next()) order.setOrderId(rs.getLong(1));
+                }
+            }
+            conn.commit();
+        }
+        return order;
+    }
+
+    public List<OrderDTO> listOrders() throws SQLException {
+        List<OrderDTO> out = new ArrayList<>();
+        String sql = "SELECT ORDER_ID, CUSTOMER_ID, GIFT_ID, QUANTITY, TOTAL_PRICE FROM ORDERS ORDER BY ORDER_ID";
+        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                out.add(new OrderDTO(rs.getLong("ORDER_ID"), rs.getLong("CUSTOMER_ID"), rs.getLong("GIFT_ID"), rs.getInt("QUANTITY"), rs.getDouble("TOTAL_PRICE")));
+            }
+        }
+        return out;
+    }
 }
