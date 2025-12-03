@@ -57,4 +57,57 @@ class Gift {
         this.price = price;
         this.inStock = inStock;
     }
+
+    public Long getGiftId() { return giftId; }
+    public void setGiftId(Long giftId) { this.giftId = giftId; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public Double getPrice() { return price; }
+    public void setPrice(Double price) { this.price = price; }
+    public Integer getInStock() { return inStock; }
+    public void setInStock(Integer inStock) { this.inStock = inStock; }
+
+    @Override
+    public String toString() {
+        return "Gift{" + "giftId=" + giftId + ", name='" + name + '\'' + ", price=" + price + ", inStock=" + inStock + '}';
+    }
 }
+
+class OrderDTO {
+    private Long orderId;
+    private Long customerId;
+    private Long giftId;
+    private Integer quantity;
+    private Double totalPrice;
+
+    public OrderDTO() {}
+
+    public OrderDTO(Long orderId, Long customerId, Long giftId, Integer quantity, Double totalPrice)
+    {
+        this.orderId = orderId;
+        this.customerId = customerId;
+        this.giftId = giftId;
+        this.quantity = quantity;
+        this.totalPrice = totalPrice;
+    }
+
+    public Long getOrderId() { return orderId; }
+    public void setOrderId(Long orderId) { this.orderId = orderId; }
+    public Long getCustomerId() { return customerId; }
+    public void setCustomerId(Long customerId) { this.customerId = customerId; }
+    public Long getGiftId() { return giftId; }
+    public void setGiftId(Long giftId) { this.giftId = giftId; }
+    public Integer getQuantity() { return quantity; }
+    public void setQuantity(Integer quantity) { this.quantity = quantity; }
+    public Double getTotalPrice() { return totalPrice; }
+    public void setTotalPrice(Double totalPrice) { this.totalPrice = totalPrice; }
+
+    @Override
+    public String toString() {
+        return "OrderDTO{" + "orderId=" + orderId + ", customerId=" + customerId + ", giftId=" + giftId + ", quantity=" + quantity + ", totalPrice=" + totalPrice + '}';
+    }
+}
+
+// ==========================
+// DAO (Oracle JDBC)
+// ==========================
