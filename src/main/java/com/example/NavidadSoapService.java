@@ -252,3 +252,110 @@ class OraclDAO {
         return out;
     }
 }
+
+// ==========================
+// SOAP Service Interface
+// ==========================
+@WebService(name = "NavidadService", targetNamespace = "http://navidad.example.com/")
+interface NavidadService {
+
+    @WebMethod
+    Customer createCustomer(@WebParam(name = "name") String name, @WebParam(name = "email") String email);
+
+    @WebMethod
+    List<Customer> listCustomers();
+
+    @WebMethod
+    Gift createGift(@WebParam(name = "name") String name, @WebParam(name = "price") double price, @WebParam(name = "inStock") int inStock);
+
+    @WebMethod
+    List<Gift> listGifts();
+
+    @WebMethod
+    OrderDTO createOrder(@WebParam(name = "customerId") long customerId, @WebParam(name = "giftId") long giftId, @WebParam(name = "quantity") int quantity);
+
+    @WebMethod
+    List<OrderDTO> listOrders();
+}
+
+// ==========================
+// SOAP Service Implementation
+// ==========================
+@WebService(endpointInterface = "NavidadService", serviceName = "NavidadService")
+class NavidadServiceImpl implements NavidadService {
+
+    private OraclDAO dao = new OraclDAO();
+
+    @Override
+    public Customer createCustomer(String name, String email) {
+        try {
+            Customer c = new Customer(null, name, email);
+            return dao.createCustomer(c);
+        } catch (SQLException e) {
+            throw new RuntimeException("Error creando cliente: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<Customer> listCustomers() {
+        try {
+            return dao.listCustomers();
+        } catch (SQLException e) {
+            throw new RuntimeException("Error listando clientes: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public Gift createGift(String name, double price, int inStock) {
+        try {
+            Gift g = new Gift(null, name, price, inStock);
+            return dao.createGift(g);
+        } catch (SQLException e) {
+            throw new RuntimeException("Error creando regalo: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<Gift> listGifts() {
+        try {
+            return dao.listGifts();
+        } catch (SQLException e) {
+            throw new RuntimeException("Error listando regalos: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public OrderDTO createOrder(long customerId, long giftId, int quantity) {
+        try {
+            Gift gift = dao.findGiftById(giftId);
+            if (gift == null) throw new RuntimeException("Regalo no encontrado");
+            double total = Objects.requireNonNull(gift).getPrice() * quantity;
+            OrderDTO order = new OrderDTO(null, customerId, giftId, quantity, total);
+            return dao.createOrder(order);
+        } catch (SQLException e) {
+            throw new RuntimeException("Error creando orden: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<OrderDTO> listOrders() {
+        try {
+            return dao.listOrders();
+        } catch (SQLException e) {
+            throw new RuntimeException("Error listando ordenes: " + e.getMessage(), e);
+        }
+    }
+}
+
+// ==========================
+// Endpoint publisher (para pruebas locales)
+// ==========================
+class EndpointPublisher {
+    public static void main(String[] args) {
+        String url = "http://localhost:8080/navidadService";
+        System.out.println("Publicando servicio SOAP en: " + url + "?wsdl");
+        NavidadServiceImpl impl = new NavidadServiceImpl();
+        Endpoint.publish(url, impl);
+        System.out.println("Servicio publicado. Presiona Ctrl+C para detener.");
+    }
+}
