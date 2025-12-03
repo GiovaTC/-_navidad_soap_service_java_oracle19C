@@ -41,3 +41,20 @@ class Customer {
     }
 }
 
+class Gift {
+    private Long giftId;
+    private String name;
+    private Double price;
+    private Integer inStock;
+
+    public Gift()
+    {
+    }
+
+    public Gift(Long giftId, String name, Double price, Integer inStock) {
+        this.giftId = giftId;
+        this.name = name;
+        this.price = price;
+        this.inStock = inStock;
+    }
+}
