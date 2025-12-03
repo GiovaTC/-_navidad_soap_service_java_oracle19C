@@ -359,3 +359,38 @@ class EndpointPublisher {
         System.out.println("Servicio publicado. Presiona Ctrl+C para detener.");
     }
 }
+
+// ==========================
+// Cliente ejemplo (consumo del servicio publicado localmente)
+// ==========================
+class NavidadClient {
+    public static void main(String[] args) throws Exception {
+        // Ajustar según dónde publiques el servicio
+        URL wsdlURL = new URL("http://localhost:8080/navidadService?wsdl");
+        QName SERVICE_NAME = new QName("http://navidad.example.com/", "NavidadService");
+        QName PORT_NAME = new QName("http://navidad.example.com/", "NavidadServicePort");
+
+        Service service = Service.create(wsdlURL, SERVICE_NAME);
+        // A partir del Service obtienes el proxy implementando la interfaz
+        NavidadService proxy = service.getPort(NavidadService.class);
+
+        // Crear cliente
+        Customer c = proxy.createCustomer("Juan Perez", "juan@example.com");
+        System.out.println("Cliente creado: " + c);
+
+        // Crear regalos
+        Gift g1 = proxy.createGift("Muñeco de Nieve", 29.99, 50);
+        Gift g2 = proxy.createGift("Caja de Dulces Navideños", 15.5, 100);
+        System.out.println("Regalos creados: " + g1 + ", " + g2);
+
+        // Listar
+        System.out.println("Clientes: " + proxy.listCustomers());
+        System.out.println("Regalos: " + proxy.listGifts());
+
+        // Hacer orden
+        OrderDTO o = proxy.createOrder(c.getCustomerId(), g1.getGiftId(), 2);
+        System.out.println("Orden creada: " + o);
+
+        System.out.println("Ordenes: " + proxy.listOrders());
+    }
+}
