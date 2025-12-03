@@ -37,7 +37,7 @@ class Customer {
 
     @Override
     public String toString() {
-        return "Customer{" + "customerId=" + customerId + ", name=" + name + ", email=" + email + '\'' + '}';
+        return "Customer{" + "customerId=" + customerId + ", name='" + name + '\'' + ", email='" + email + '\'' + '}';
     }
 }
 
@@ -47,9 +47,7 @@ class Gift {
     private Double price;
     private Integer inStock;
 
-    public Gift()
-    {
-    }
+    public Gift() {}
 
     public Gift(Long giftId, String name, Double price, Integer inStock) {
         this.giftId = giftId;
@@ -82,8 +80,7 @@ class OrderDTO {
 
     public OrderDTO() {}
 
-    public OrderDTO(Long orderId, Long customerId, Long giftId, Integer quantity, Double totalPrice)
-    {
+    public OrderDTO(Long orderId, Long customerId, Long giftId, Integer quantity, Double totalPrice) {
         this.orderId = orderId;
         this.customerId = customerId;
         this.giftId = giftId;
@@ -112,7 +109,6 @@ class OrderDTO {
 // DAO (Oracle JDBC)
 // ==========================
 class OraclDAO {
-    // ajusta estos datos a tu entorno
     private static final String DRIVER = "oracle.jdbc.driver.OracleDriver";
     private static final String CONNECTION_STRING = "jdbc:oracle:thin:@//localhost:1521/orcl";
     private static final String USER = "system";
@@ -130,56 +126,62 @@ class OraclDAO {
         return DriverManager.getConnection(CONNECTION_STRING, USER, PASS);
     }
 
-    // customer CRUD
+    // ------------------------------------------------
+    // CUSTOMER CRUD
+    // ------------------------------------------------
     public Customer createCustomer(Customer c) throws SQLException {
-        String sql = "INSERT INTO customer (NAME, EMAIL) VALUES (?, ?)";
-        String [] cols = {"CUSTOMER_ID"};
-        try (Connection connection = getConnection(); PreparedStatement ps = connection.prepareStatement(sql, cols)) {
+        String sql = "INSERT INTO CUSTOMER (NAME, EMAIL) VALUES (?, ?)";
+        String[] cols = {"CUSTOMER_ID"};
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, cols)) {
+
             ps.setString(1, c.getName());
             ps.setString(2, c.getEmail());
             ps.executeUpdate();
+
             try (ResultSet rs = ps.getGeneratedKeys()) {
-                if (rs.next()) {
-                    c.setCustomerId(rs.getLong(1));
-                }
+                if (rs.next()) c.setCustomerId(rs.getLong(1));
             }
         }
         return c;
     }
 
-    public Customer findCustomerById(Long id) throws SQLException {
-        String sql = "SELECT CUSTOMER_ID, NAME, EMAIL FROM CUSTOMER WHERE CUSTOMER_ID = ?";
-        try (Connection connection = getConnection(); PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setLong(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                   return new Customer (rs.getLong("CUSTOMER_ID"), rs.getString("NAME"), rs.getString("EMAIL"));
-                }
-            }
-        }
-        return null;
-    }
-
     public List<Customer> listCustomers() throws SQLException {
         List<Customer> out = new ArrayList<>();
         String sql = "SELECT CUSTOMER_ID, NAME, EMAIL FROM CUSTOMER ORDER BY CUSTOMER_ID";
-        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
             while (rs.next()) {
-                out.add(new Customer(rs.getLong("CUSTOMER_ID"), rs.getString("NAME"), rs.getString("EMAIL")));
+                out.add(new Customer(
+                        rs.getLong("CUSTOMER_ID"),
+                        rs.getString("NAME"),
+                        rs.getString("EMAIL")
+                ));
             }
         }
         return out;
     }
 
-    // Gift CRUD
+
+    // ------------------------------------------------
+    // GIFT CRUD
+    // ------------------------------------------------
     public Gift createGift(Gift g) throws SQLException {
-        String sql = "INSERT INTO GIFT(NAME, PRICE, IN_STOCK) VALUES(?, ?, ?)";
+        String sql = "INSERT INTO GIFT (NAME, PRICE, IN_STOCK) VALUES (?, ?, ?)";
         String[] cols = {"GIFT_ID"};
-        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql, cols)) {
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, cols)) {
+
             ps.setString(1, g.getName());
             ps.setDouble(2, g.getPrice());
             ps.setInt(3, g.getInStock());
             ps.executeUpdate();
+
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) g.setGiftId(rs.getLong(1));
             }
@@ -187,66 +189,118 @@ class OraclDAO {
         return g;
     }
 
+    // ✅ FALTABA ESTE MÉTODO
+    public List<Gift> listGifts() throws SQLException {
+        List<Gift> out = new ArrayList<>();
+        String sql = "SELECT GIFT_ID, NAME, PRICE, IN_STOCK FROM GIFT ORDER BY GIFT_ID";
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                out.add(new Gift(
+                        rs.getLong("GIFT_ID"),
+                        rs.getString("NAME"),
+                        rs.getDouble("PRICE"),
+                        rs.getInt("IN_STOCK")
+                ));
+            }
+        }
+        return out;
+    }
+
+
     public Gift findGiftById(Long id) throws SQLException {
         String sql = "SELECT GIFT_ID, NAME, PRICE, IN_STOCK FROM GIFT WHERE GIFT_ID = ?";
-        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
             ps.setLong(1, id);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return new Gift(rs.getLong("GIFT_ID"), rs.getString("NAME"), rs.getDouble("PRICE"), rs.getInt("IN_STOCK"));
+                if (rs.next()) {
+                    return new Gift(
+                            rs.getLong("GIFT_ID"),
+                            rs.getString("NAME"),
+                            rs.getDouble("PRICE"),
+                            rs.getInt("IN_STOCK")
+                    );
+                }
             }
         }
         return null;
     }
 
-    public List<Gift> listGifts() throws SQLException {
-        List<Gift> out = new ArrayList<>();
-        String sql = "SELECT GIFT_ID, NAME, PRICE, IN_STOCK FROM GIFT ORDER BY GIFT_ID";
-        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) out.add(new Gift(rs.getLong("GIFT_ID"), rs.getString("NAME"), rs.getDouble("PRICE"), rs.getInt("IN_STOCK")));
-        }
-        return out;
-    }
 
-    // Orders
+    // ------------------------------------------------
+    // ORDER CRUD
+    // ------------------------------------------------
     public OrderDTO createOrder(OrderDTO order) throws SQLException {
-        // Reduce stock and insert order in a transaction
-        String updateStock = "UPDATE GIFT SET IN_STOCK = IN_STOCK - ? WHERE GIFT_ID = ? AND IN_STOCK >= ?";
-        String insertOrder = "INSERT INTO ORDERS(CUSTOMER_ID, GIFT_ID, QUANTITY, TOTAL_PRICE) VALUES(?, ?, ?, ?)";
+        String updateStock =
+                "UPDATE GIFT SET IN_STOCK = IN_STOCK - ? WHERE GIFT_ID = ? AND IN_STOCK >= ?";
+
+        String insertOrder =
+                "INSERT INTO ORDERS (CUSTOMER_ID, GIFT_ID, QUANTITY, TOTAL_PRICE) VALUES (?, ?, ?, ?)";
+
         String[] cols = {"ORDER_ID"};
 
         try (Connection conn = getConnection()) {
             conn.setAutoCommit(false);
+
+            // 1. Descontar Stock
             try (PreparedStatement pst = conn.prepareStatement(updateStock)) {
                 pst.setInt(1, order.getQuantity());
                 pst.setLong(2, order.getGiftId());
                 pst.setInt(3, order.getQuantity());
-                int rows = pst.executeUpdate();
-                if (rows == 0) {
+
+                int updated = pst.executeUpdate();
+                if (updated == 0) {
                     conn.rollback();
                     throw new SQLException("Stock insuficiente o regalo no existe");
                 }
             }
+
+            // 2. Insertar Orden
             try (PreparedStatement psi = conn.prepareStatement(insertOrder, cols)) {
                 psi.setLong(1, order.getCustomerId());
                 psi.setLong(2, order.getGiftId());
                 psi.setInt(3, order.getQuantity());
                 psi.setDouble(4, order.getTotalPrice());
                 psi.executeUpdate();
+
                 try (ResultSet rs = psi.getGeneratedKeys()) {
                     if (rs.next()) order.setOrderId(rs.getLong(1));
                 }
             }
+
             conn.commit();
         }
         return order;
     }
 
+    // ✅ TAMBIÉN FALTABA ESTE MÉTODO
     public List<OrderDTO> listOrders() throws SQLException {
         List<OrderDTO> out = new ArrayList<>();
-        String sql = "SELECT ORDER_ID, CUSTOMER_ID, GIFT_ID, QUANTITY, TOTAL_PRICE FROM ORDERS ORDER BY ORDER_ID";
-        try (Connection conn = getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+
+        String sql = """
+            SELECT ORDER_ID, CUSTOMER_ID, GIFT_ID, QUANTITY, TOTAL_PRICE
+            FROM ORDERS
+            ORDER BY ORDER_ID
+        """;
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
             while (rs.next()) {
-                out.add(new OrderDTO(rs.getLong("ORDER_ID"), rs.getLong("CUSTOMER_ID"), rs.getLong("GIFT_ID"), rs.getInt("QUANTITY"), rs.getDouble("TOTAL_PRICE")));
+                out.add(new OrderDTO(
+                        rs.getLong("ORDER_ID"),
+                        rs.getLong("CUSTOMER_ID"),
+                        rs.getLong("GIFT_ID"),
+                        rs.getInt("QUANTITY"),
+                        rs.getDouble("TOTAL_PRICE")
+                ));
             }
         }
         return out;
@@ -254,34 +308,43 @@ class OraclDAO {
 }
 
 // ==========================
-// SOAP Service Interface
+// SOAP Interface
 // ==========================
 @WebService(name = "NavidadService", targetNamespace = "http://navidad.example.com/")
 interface NavidadService {
 
     @WebMethod
-    Customer createCustomer(@WebParam(name = "name") String name, @WebParam(name = "email") String email);
+    Customer createCustomer(@WebParam(name = "name") String name,
+                            @WebParam(name = "email") String email);
 
     @WebMethod
     List<Customer> listCustomers();
 
     @WebMethod
-    Gift createGift(@WebParam(name = "name") String name, @WebParam(name = "price") double price, @WebParam(name = "inStock") int inStock);
+    Gift createGift(@WebParam(name = "name") String name,
+                    @WebParam(name = "price") double price,
+                    @WebParam(name = "inStock") int inStock);
 
     @WebMethod
     List<Gift> listGifts();
 
     @WebMethod
-    OrderDTO createOrder(@WebParam(name = "customerId") long customerId, @WebParam(name = "giftId") long giftId, @WebParam(name = "quantity") int quantity);
+    OrderDTO createOrder(@WebParam(name = "customerId") long customerId,
+                         @WebParam(name = "giftId") long giftId,
+                         @WebParam(name = "quantity") int quantity);
 
     @WebMethod
     List<OrderDTO> listOrders();
 }
 
 // ==========================
-// SOAP Service Implementation
+// SOAP Implementation
 // ==========================
-@WebService(endpointInterface = "NavidadService", serviceName = "NavidadService")
+@WebService(
+        endpointInterface = "com.example.NavidadService",
+        serviceName = "NavidadService",
+        targetNamespace = "http://navidad.example.com/"
+)
 class NavidadServiceImpl implements NavidadService {
 
     private OraclDAO dao = new OraclDAO();
@@ -329,8 +392,10 @@ class NavidadServiceImpl implements NavidadService {
         try {
             Gift gift = dao.findGiftById(giftId);
             if (gift == null) throw new RuntimeException("Regalo no encontrado");
-            double total = Objects.requireNonNull(gift).getPrice() * quantity;
+
+            double total = gift.getPrice() * quantity;
             OrderDTO order = new OrderDTO(null, customerId, giftId, quantity, total);
+
             return dao.createOrder(order);
         } catch (SQLException e) {
             throw new RuntimeException("Error creando orden: " + e.getMessage(), e);
@@ -342,55 +407,45 @@ class NavidadServiceImpl implements NavidadService {
         try {
             return dao.listOrders();
         } catch (SQLException e) {
-            throw new RuntimeException("Error listando ordenes: " + e.getMessage(), e);
+            throw new RuntimeException("Error listando órdenes: " + e.getMessage(), e);
         }
     }
 }
 
 // ==========================
-// Endpoint publisher (para pruebas locales)
+// Endpoint Publisher
 // ==========================
 class EndpointPublisher {
     public static void main(String[] args) {
         String url = "http://localhost:8080/navidadService";
         System.out.println("Publicando servicio SOAP en: " + url + "?wsdl");
-        NavidadServiceImpl impl = new NavidadServiceImpl();
-        Endpoint.publish(url, impl);
-        System.out.println("Servicio publicado. Presiona Ctrl+C para detener.");
+        Endpoint.publish(url, new NavidadServiceImpl());
+        System.out.println("Servicio activo. CTRL + C para detener.");
     }
 }
 
 // ==========================
-// Cliente ejemplo (consumo del servicio publicado localmente)
+// Cliente SOAP
 // ==========================
 class NavidadClient {
     public static void main(String[] args) throws Exception {
-        // Ajustar según dónde publiques el servicio
+
         URL wsdlURL = new URL("http://localhost:8080/navidadService?wsdl");
         QName SERVICE_NAME = new QName("http://navidad.example.com/", "NavidadService");
         QName PORT_NAME = new QName("http://navidad.example.com/", "NavidadServicePort");
 
         Service service = Service.create(wsdlURL, SERVICE_NAME);
-        // A partir del Service obtienes el proxy implementando la interfaz
         NavidadService proxy = service.getPort(NavidadService.class);
 
-        // Crear cliente
-        Customer c = proxy.createCustomer("Juan Perez", "juan@example.com");
+        Customer c = proxy.createCustomer("Juan Pérez", "juan@example.com");
         System.out.println("Cliente creado: " + c);
 
-        // Crear regalos
         Gift g1 = proxy.createGift("Muñeco de Nieve", 29.99, 50);
         Gift g2 = proxy.createGift("Caja de Dulces Navideños", 15.5, 100);
-        System.out.println("Regalos creados: " + g1 + ", " + g2);
 
-        // Listar
-        System.out.println("Clientes: " + proxy.listCustomers());
         System.out.println("Regalos: " + proxy.listGifts());
-
-        // Hacer orden
         OrderDTO o = proxy.createOrder(c.getCustomerId(), g1.getGiftId(), 2);
-        System.out.println("Orden creada: " + o);
 
-        System.out.println("Ordenes: " + proxy.listOrders());
+        System.out.println("Orden creada: " + o);
     }
 }
