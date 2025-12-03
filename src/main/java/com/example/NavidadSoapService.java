@@ -111,3 +111,24 @@ class OrderDTO {
 // ==========================
 // DAO (Oracle JDBC)
 // ==========================
+class OraclDAO {
+    // ajusta estos datos a tu entorno
+    private static final String DRIVER = "oracle.jdbc.driver.OracleDriver";
+    private static final String CONNECTION_STRING = "jdbc:oracle:thin:@//localhost:1521/orcl";
+    private static final String USER = "system";
+    private static final String PASS = "Tapiero123";
+
+    public OraclDAO() {
+        try {
+            Class.forName(DRIVER);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Oracle JDBC driver not found. Añade ojdbc jar al classpath.", e);
+        }
+    }
+
+    private Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(CONNECTION_STRING, USER, PASS);
+    }
+
+    // customer CRUD
+}
